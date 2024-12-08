@@ -14,6 +14,29 @@ CORS(app)
 
 # create the jackson family object
 jackson_family = FamilyStructure("Jackson")
+jackson_family._members = [
+            {
+                "id": jackson_family._generate_id(),
+                "first_name": "John",
+                "last_name": jackson_family.last_name,
+                "age": 33,
+                "lucky_numbers": [7, 13, 22]
+            },
+            {
+                "id": jackson_family._generate_id(),
+                "first_name": "Jane",
+                "last_name": jackson_family.last_name,
+                "age": 35,
+                "lucky_numbers": [10, 14, 3]
+            },
+            {
+                "id": jackson_family._generate_id(),
+                "first_name": "Jimmy",
+                "last_name": jackson_family.last_name,
+                "age": 5,
+                "lucky_numbers": [1]
+            }
+        ]
 
 # Handle/serialize errors like a JSON object
 @app.errorhandler(APIException)
@@ -34,10 +57,51 @@ def handle_hello():
         "hello": "world",
         "family": members
     }
-
-
+ 
     return jsonify(response_body), 200
+ 
+# Endpoint 2: Retrieve one member by ID
+@app.route('/member/<int:member_id>', methods=['GET'])
+def get_member(member_id):
+    try:
+        member = jackson_family.get_member(member_id)
+        if member:
+            return jsonify(member), 200
+        else:
+            return jsonify({"error": "Member not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
+# Endpoint 3: Add a new member
+@app.route('/member', methods=['POST'])
+def add_member():
+    try:
+        data = request.get_json()
+        if not data or not all(key in data for key in ['first_name', 'age', 'lucky_numbers']):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        jackson_family.add_member(data)
+        return jsonify({"message": "Member added successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Endpoint 4: Delete a member by ID
+@app.route('/member/<int:member_id>', methods=['DELETE'])
+def delete_member(member_id):
+    try:
+        member = jackson_family.get_member(member_id)
+        if member:
+            jackson_family.delete_member(member_id)
+            return jsonify({"done": True}), 200
+        else:
+            return jsonify({"error": "Member not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Run the app
+if __name__ == '__main__':
+    app.run(debug=True)
+ 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 3000))
